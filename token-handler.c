@@ -165,15 +165,114 @@ void printTrie(trie* tr) {
     __printTrie(tr, 0);
 }
 
-void __printTrie(trie* tr, int indents);
+void __printTrie(trie* tr, int indents) {
     for (int i=0; i < trieLen; i++) {
         trie* rtr = getTrie(tr, (char) i);
         if (rtr != NULL) {
             for (int j=0; j < indents; j++) {
-                
+                fprintf(stdout, "\t");
             }
+            fprintf(stdout, "%c: %i\n", (char) i, rtr->count);
             printTrie(rtr, indents + 1);
         }
     }
+}
+
+wctuple* toList(trie* tr, int* sz) {
+    return __toList(tr, sz, NULL);
+}
+
+wctuple* __toList(trie* tr, int* cntL, char* prefix) {
+    wctuple* mlist;
+    int lsize = 0;
+
+    for (int i=0; i < trieLen; i++) {
+        trie* rtr = getTrie(tr, (char) i);
+        if (rtr != NULL) {
+            char* mprefix;
+            if (prefix != NULL) {
+                int slp = strlen(prefix);
+                mprefix = calloc(slp+2, sizeof(char));
+                strcpy(mprefix, prefix, slp);
+                mprefix[slp] = (char) i;
+            } else if {
+                mprefix = calloc(2, sizeof(char));
+                mprefix[0] = (char) i;
+            }
+
+            // mprefix now contains the cumulative word
+
+            if (rtr->count > 0) {
+                // Add to the list. This is a word
+
+                if (lsize == 0) {
+                    // Freshly allocate
+                    mlist = malloc(sizeof(wctuple));
+                    mlist[0].val = rtr->count;
+                    mlist[0].str = strdup(mprefix);
+                } else {
+                    // Expand the list (inefficient with copying, I know)
+                    wctuple* nl = malloc(sizeof(wctuple));
+
+                    // Copy everything bigger into the array
+                    int i = 0;
+                    while (i < lsize && mlist[i].val > rtr->count) {
+                        nl[i] = mlist[i];
+                        ++i;
+                    }
+                    // Add self
+                    nl[i].val = rtr->count;
+                    nl[i].str = strdup(mprefix);
+                    ++i;
+
+                    // Copy everything smaller
+                    while (i < lsize) {
+                        nl[i] = mlist[i-1];
+                        ++i;
+                    }
+                    free(mlist);
+                    mlist = nl;
+                }
+            }
+
+            // Descend on the remaining tries
+            int* retSize = malloc(sizeof(int));
+            wctuple* recList = __toList(rtr, retSize, mprefix);
+
+            // Merge results
+            // Allocate space for both
+            wctuple* merged = malloc(sizeof(wctuple)*(*retSize + lsize));
+            int aidx = 0;
+            int bidx = 0;
+
+            for (int j=0; j < *retSize + lsize; j++) {
+                // Add the next largest
+                if (aidx < lsize  && mlist[lsize]  ) {
+                    // Add from mlist
+                    merged[j] = mlist[aidx];
+                    ++aidx;
+                } else if (bidx < *retSize) {
+                    merged[j] = recList[bidx];
+                    ++bidx;
+                } else {
+                    // Ran out of vals before done merging
+                    fprintf(stderr, "Ran out of vals before done merging. Need for %i. A: %i/%i B: %i/%i\n", j, aidx, lsize, bidx, *recSize);
+                }
+            }
+
+            // Free the spares, and save it as the current
+            free(mlist);
+            free(recList);
+            mlist = merged;
+            lsize = *retSize + lsize;
+            free(retSize);
+        }
+    }
+
+    *cntL = lsize;
+    return mList;
+}
+
+
 wctuple* getMaxCounts(trie* tr, int topN);
 wctuple* __getMaxCounts(trie* tr, wctuple* maxes, int size, char* prefix);
