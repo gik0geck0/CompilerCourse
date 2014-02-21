@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define DEBUG 0
+
 char *strdup(const char *s);
 
 extern char* yytext;
@@ -25,8 +28,8 @@ typedef struct wctuple {
     char* str;
     int val;
 } wctuple;
-wctuple* getMaxCounts(trie* tr, int topN);
-wctuple* __getMaxCounts(trie* tr, wctuple* maxes, int size, char* prefix);
+wctuple* toList(trie* tr, int* sz);
+wctuple* __toList(trie* tr, int* cntL, char* prefix);
 
 void moveRight(wctuple* list, int rightOf, int size) {
     // move things to the right from the left until reaching the index
@@ -91,22 +94,27 @@ void token_handler(void) {
             addToTrie(1, yytext, wordCounts);
         }
 	}
-    // fprintf(stdout, "Trie is now:\n");
-    // printTrie(wordCounts);
+
+    if (DEBUG) {
+        fprintf(stdout, "Trie is now:\n");
+        printTrie(wordCounts);
+    }
 
     // Now, find the most occuring words
-    fprintf(stdout, "Looking for most frequent words\n");
-    int max = 10;
-    wctuple* fq = getMaxCounts(wordCounts, max);
-    for (int i = 0; i < max; i++) {
+    int* sz = calloc(1, sizeof(int));
+    wctuple* fq = toList(wordCounts, sz);
+
+    // Print all the most occuring
+    for (int i = 0; i < *sz; i++) {
         fprintf(stdout, "#%i: %s (%i)\n", i, fq[i].str, fq[i].val);
     }
 
     // Frees
-    for (int i = 0; i < max; i++) {
-        // free(fq[i].str);
+    for (int i = 0; i < *sz; i++) {
+        free(fq[i].str);
     }
     free(fq);
+    free(sz);
 
     for (int i=0; i < iwsize; i++) {
         free(ignoreWords[i]);
@@ -114,6 +122,9 @@ void token_handler(void) {
     free(ignoreWords);
 
     freeTrie(wordCounts);
+
+    // Really lex? You really did this?
+    free(yytext);
 }
 
 void freeTrie(trie* tr) {
@@ -173,7 +184,7 @@ void __printTrie(trie* tr, int indents) {
                 fprintf(stdout, "\t");
             }
             fprintf(stdout, "%c: %i\n", (char) i, rtr->count);
-            printTrie(rtr, indents + 1);
+            __printTrie(rtr, indents + 1);
         }
     }
 }
@@ -184,7 +195,7 @@ wctuple* toList(trie* tr, int* sz) {
 
 wctuple* __toList(trie* tr, int* cntL, char* prefix) {
     wctuple* mlist;
-    int lsize = 0;
+    *cntL = 0;
 
     for (int i=0; i < trieLen; i++) {
         trie* rtr = getTrie(tr, (char) i);
@@ -193,9 +204,9 @@ wctuple* __toList(trie* tr, int* cntL, char* prefix) {
             if (prefix != NULL) {
                 int slp = strlen(prefix);
                 mprefix = calloc(slp+2, sizeof(char));
-                strcpy(mprefix, prefix, slp);
+                memcpy(mprefix, prefix, slp*sizeof(char));
                 mprefix[slp] = (char) i;
-            } else if {
+            } else {
                 mprefix = calloc(2, sizeof(char));
                 mprefix[0] = (char) i;
             }
@@ -205,74 +216,121 @@ wctuple* __toList(trie* tr, int* cntL, char* prefix) {
             if (rtr->count > 0) {
                 // Add to the list. This is a word
 
-                if (lsize == 0) {
+                if (*cntL == 0) {
                     // Freshly allocate
                     mlist = malloc(sizeof(wctuple));
                     mlist[0].val = rtr->count;
                     mlist[0].str = strdup(mprefix);
+                    ++(*cntL);
+                    if (DEBUG) {
+                        fprintf(stdout, "Starter: %s => %i\n", mlist[0].str, mlist[0].val);
+                    }
                 } else {
                     // Expand the list (inefficient with copying, I know)
-                    wctuple* nl = malloc(sizeof(wctuple));
+                    wctuple* nl = malloc(sizeof(wctuple)* (*cntL + 1));
 
                     // Copy everything bigger into the array
-                    int i = 0;
-                    while (i < lsize && mlist[i].val > rtr->count) {
-                        nl[i] = mlist[i];
-                        ++i;
+                    int j = 0;
+                    while (j < *cntL && mlist[j].val > rtr->count) {
+                        nl[j] = mlist[j];
+                        ++j;
                     }
                     // Add self
-                    nl[i].val = rtr->count;
-                    nl[i].str = strdup(mprefix);
-                    ++i;
+                    nl[j].val = rtr->count;
+                    nl[j].str = strdup(mprefix);
+                    ++j;
 
                     // Copy everything smaller
-                    while (i < lsize) {
-                        nl[i] = mlist[i-1];
-                        ++i;
+                    while (j < *cntL + 1) {
+                        nl[j] = mlist[j-1];
+                        ++j;
                     }
-                    free(mlist);
+
+                    if (*cntL > 0) {
+                        free(mlist);
+                    }
+                    ++(*cntL);
                     mlist = nl;
+
+                    if (DEBUG) {
+                        fprintf(stdout, "List was added to:\n");
+                        for (int k = 0; k < *cntL; k++) {
+                            fprintf(stdout, "#%i: %s => %i\n", k, mlist[k].str, mlist[k].val);
+                        }
+                    }
                 }
             }
 
             // Descend on the remaining tries
             int* retSize = malloc(sizeof(int));
             wctuple* recList = __toList(rtr, retSize, mprefix);
+            // fprintf(stdout, "Got an array of size %i\n", *retSize);
 
             // Merge results
             // Allocate space for both
-            wctuple* merged = malloc(sizeof(wctuple)*(*retSize + lsize));
+            wctuple* merged = malloc(sizeof(wctuple)*(*retSize + *cntL));
             int aidx = 0;
             int bidx = 0;
 
-            for (int j=0; j < *retSize + lsize; j++) {
+            for (int j=0; j < *retSize + *cntL; j++) {
+                if (DEBUG) {
+                    fprintf(stdout, "Choosing merge index %i. Choices:\n", j);
+                    if (aidx < *cntL)
+                        fprintf(stdout, "\tmlist[%i] = %s => %i\n", aidx, mlist[aidx].str, mlist[aidx].val);
+                    if (bidx < *retSize)
+                        fprintf(stdout, "\trecList[%i] = %s => %i\n", bidx, recList[bidx].str, recList[bidx].val);
+                }
+
                 // Add the next largest
-                if (aidx < lsize  && mlist[lsize]  ) {
+                //  only if available
+                //                    if we only have A, short circuit
+                //                                       We also need to be greater than the choice in B
+                if (aidx < *cntL  && (bidx >= *retSize || mlist[aidx].val > recList[bidx].val) ) {
                     // Add from mlist
                     merged[j] = mlist[aidx];
                     ++aidx;
-                } else if (bidx < *retSize) {
+                } else if (bidx < *retSize && (aidx >= *cntL || recList[bidx].val > mlist[aidx].val)) {
                     merged[j] = recList[bidx];
                     ++bidx;
+                } else if (aidx < *cntL && bidx < *retSize) {
+                    // Decide based on string comparison
+                    if (strcmp(mlist[aidx].str, recList[bidx].str) <= 0) {
+                        merged[j] = mlist[aidx];
+                        ++aidx;
+                    } else {
+                        merged[j] = recList[bidx];
+                        ++bidx;
+                    }
                 } else {
                     // Ran out of vals before done merging
-                    fprintf(stderr, "Ran out of vals before done merging. Need for %i. A: %i/%i B: %i/%i\n", j, aidx, lsize, bidx, *recSize);
+                    fprintf(stderr, "Ran out of vals before done merging. Need for %i. A: %i/%i B: %i/%i\n", j, aidx, *cntL, bidx, *retSize);
+                }
+            }
+
+            if (DEBUG) {
+                fprintf(stdout, "Merged list for up to %s:\n", mprefix);
+                for (int k = 0; k < *cntL + *retSize; k++) {
+                    fprintf(stdout, "#%i: %s => %i\n", k, merged[k].str, merged[k].val);
                 }
             }
 
             // Free the spares, and save it as the current
-            free(mlist);
-            free(recList);
+            if (*cntL > 0) {
+                free(mlist);
+            }
+
+            if (*retSize > 0) {
+                // fprintf(stdout, "Freeing an array that should be of size %i\n", *retSize);
+                free(recList);
+            }
             mlist = merged;
-            lsize = *retSize + lsize;
+            *cntL = *retSize + *cntL;
             free(retSize);
+
+            free(mprefix);
         }
     }
 
-    *cntL = lsize;
-    return mList;
+    // fprintf(stdout, "Returning an array of size %i\n", *cntL);
+    return mlist;
 }
-
-
-wctuple* getMaxCounts(trie* tr, int topN);
-wctuple* __getMaxCounts(trie* tr, wctuple* maxes, int size, char* prefix);

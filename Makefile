@@ -1,6 +1,6 @@
 LEX=flex
 LEXLIB=-lfl
-CFLAGS=-DNDEBUG
+CFLAGS=-DNDEBUG -std=c99 -ggdb
 CXXFLAGS=${CFLAGS}
 
 all:: capp cxxapp
