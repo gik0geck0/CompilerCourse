@@ -156,4 +156,24 @@ trie* getTrieStr(trie* tr, char* str) {
 
 void addToTrie(int adder, char* str, trie* tr) {
     trie* rtr = getTrieStr(tr, str);
-    
+    if (rtr != NULL) {
+        rtr->count += 1;
+    }
+}
+
+void printTrie(trie* tr) {
+    __printTrie(tr, 0);
+}
+
+void __printTrie(trie* tr, int indents);
+    for (int i=0; i < trieLen; i++) {
+        trie* rtr = getTrie(tr, (char) i);
+        if (rtr != NULL) {
+            for (int j=0; j < indents; j++) {
+                
+            }
+            printTrie(rtr, indents + 1);
+        }
+    }
+wctuple* getMaxCounts(trie* tr, int topN);
+wctuple* __getMaxCounts(trie* tr, wctuple* maxes, int size, char* prefix);
