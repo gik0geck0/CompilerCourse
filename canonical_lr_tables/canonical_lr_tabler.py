@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-import grammernator
+from grammernator import Grammernator
 
 def main():
     # Check args
@@ -9,52 +9,40 @@ def main():
         print("Usage: %s <grammerfile>" % sys.argv[0])
         exit(-1)
 
-    # Open the grammer file
-    grammer_file = open(sys.argv[1], 'r')
+    grmntr = Grammernator.loadfromfile(sys.argv[1], 'S')
 
-    # Read the rules into the grammer tree
-    # Grammer tree :: RuleChar -> [Production]
-    grammer_tree = {}
+    if '-table' in sys.argv:
+        gtable = grmntr.get_parse_table()
+        statemap = {}
 
-    rule_char = ''
-    for line in grammer_file:
+        i=0
+        for state in gtable:
+            print("%i: %s" % (i,str(set(state))))
+            statemap[state] = i
+            i += 1
 
-        # Remove whitespace at the beginning and the end
-        line = line.strip()
+        print("",end="\t")
+        for inchr in grmntr.alphabet:
+            print(inchr, end="\t")
 
-        # Remove whitespace inbetween characters
-        line = line.replace(" ", "")
-        line = line.replace("\t", "")
+        for state in gtable:
+            print(statemap[state], end="\t")
+            for inchr in grmntr.alphabet:
+                if inchr in gtable[state] and len(gtable[state][inchr]) > 0:
+                    print(statemap[gtable[state][inchr]], end="\t")
+                else:
+                    print("", end="\t")
+            print("")
 
-        # Are we looking at S -> A
-        #   or...              | B
-        if line[0] == '|':
-            # Add this production to the last rule_char's list of productions
-            #                          Doing the split | makes it so that each possible rule on the same line is added separately
-            grammer_tree[rule_char] += line[1:].split('|')
-        else:
-            # Change the rule character
-            rule_char = line[0]
+    else:
+        # Now, spin off the grammer-inator
+        # Assume that 'S' is the starting symbol
+        item_states = grmntr.get_states()
 
-            # Check if it's a new rule char
-            if rule_char not in grammer_tree:
-                grammer_tree[rule_char] = []
-
-            # Add the production, skipping the ->
-            grammer_tree[rule_char] += line[3:].split('|')
-
-    grammer_file.close()
-
-    # Print the read-in grammer
-    for rule in grammer_tree:
-        print("%s -> %s" % (rule, str(grammer_tree[rule])))
-
-    # Now, spin off the grammer-inator
-    # Assume that 'S' is the starting symbol
-    item_states = Grammernator(grammer_tree, 'S').get_states()
-
-    # Display the item states
-    map(print, item_states)
+        # Display the item states
+        print("Item States:")
+        for item in item_states:
+            print(set(item))
 
 if __name__ == '__main__':
     main()
