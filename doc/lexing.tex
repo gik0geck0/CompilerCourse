@@ -1,0 +1,103 @@
+
+\documentclass[11pt]{article}
+\begin{document}
+\section{pg 106: \#1}
+    ID main \\
+    OPAREN \\
+    CPAREN \\
+    OCURLY \\
+    CONST \\
+    TYPE float \\
+    ID payment \\
+    EQUALS \\
+    FLOATVALUE 384.00 \\
+    SEMICOLON \\
+    TYPE float \\
+    ID bal \\
+    SEMICOLON \\
+    TYPE int \\
+    ID month \\
+    EQUALS \\
+    INTVALUE 0 \\
+    SEMICOLON \\
+    ID bal \\
+    EQUALS \\
+    INTVALUE \\
+    SEMICOLON \\
+    WHILE \\
+    OPAREN \\
+    ID bal \\
+    GREATERTHAN \\
+    INTVAL \\
+    CPAREN \\
+    OCURLY \\
+    ID printf \\
+    OPAREN \\
+    STRVALUE "Month: \%2d Balance: \%10.2f\textbackslash n" \\
+    COMMA \\
+    ID month \\
+    COMMA \\
+    ID bal \\
+    CPAREN \\
+    SEMICOLON \\
+    ID bal \\
+    EQUALS \\
+    ID bal \\
+    MINUS \\
+    ID payment \\
+    PLUS \\
+    FLOATVALUE 0.015 \\
+    STAR \\
+    ID bal \\
+    SEMICOLON \\
+    ID month \\
+    EQUALS \\
+    ID month \\
+    PLUS \\
+    INTVALUE l \\
+    SEMICOLON \\
+    CCURLY \\
+    CCURLY \\
+\section{pg 106 \#4}
+    a. (a$\mid$(bc)*d)+ \\
+    \begin{tabular}{|c|c|c|c|c|}
+  \hline  & a & b & c & d \\ \hline
+        1 & 4 & 2 &   & 4 \\ \hline
+        2 &   &   & 3 &   \\ \hline
+        3 &   & 2 &   & 4 \\ \hline
+       *4 & 4 & 2 &   & 4 \\ \hline
+    \end{tabular}
+
+    b. ((0$\mid$1)*(2$\mid$3)+)$\mid$0011 \\
+    \begin{tabular}{|c|c|c|c|c|}
+   \hline & 0 & 1 & 2 & 3 \\ \hline
+        1 & 2 & 6 & 7 & 7 \\ \hline
+        2 & 3 & 6 & 7 & 7 \\ \hline
+        3 & 6 & 4 & 7 & 7 \\ \hline
+        4 & 7 & 5 & 7 & 7 \\ \hline
+       *5 &   &   & 7 & 7 \\ \hline
+        6 & 6 & 6 & 7 & 7 \\ \hline
+       *7 &   &   & 7 & 7 \\ \hline
+    \end{tabular}
+
+    c. (aNot(a))*aaa \\
+        Note: Not(a) depends on what $\Sigma$ is \\
+    \begin{tabular}{|c|c|c|}
+  \hline  & a & Not(a) \\ \hline
+        1 & 2 &   \\ \hline
+        2 & 3 & 1 \\ \hline
+        3 & 4 &   \\ \hline
+       *4 &   &   \\ \hline
+    \end{tabular}
+\section{Page 110 \#19}
+    Rev(R) can be constructed from the DFA of R.
+    Reverse the direction of all the arrows.
+    Create a new state (start state). Then make a lambda transition from it to the end-states.
+    Turn the old start state into an end state and the old end states into normal states.
+    The resulting $\epsilon$-NFA will be Rev(R), and the existange of it proves its regularity.
+
+\section{107 and 111 \#6 and \#23}
+    6. C-style multiline comment
+    /\*(\*Not(/))*\*/
+
+\end{document}

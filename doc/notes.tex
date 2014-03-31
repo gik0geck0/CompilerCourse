@@ -1,0 +1,445 @@
+\documentclass[11pt]{article}
+\usepackage{enumerate}
+\begin{document}
+
+\section{Compiler Toolchains}
+    General Process
+    \begin{itemize}
+        \item Compiler :: Src $\rightarrow$ Object File
+        \item Object Files contain machine code in a specific format (such as ELF)
+        \item Linker :: Object File(s) $\rightarrow$ Machine Code
+        \item Loader :: Machine Code $\rightarrow$ RAM $\rightarrow$ CPU (Running)
+    \end{itemize}
+
+    Kinds of machine code
+    \begin{itemize}
+        \item Pure machine code - No OS, no libraries. Just straight code being executed
+        \item Augmented Machine code - Uses an OS for I/O and system libraries
+        \item Virtual Machine Code - System/library abstraction layer
+            Boot strapping: Small initial/temporary compiler that generates a compiler that can compile that language
+            ex: C compiler for Haskell will generate basic Haskell features. Then with those features, the main (reference) compiler can be created.
+    \end{itemize}
+    Compiler targets
+    \begin{itemize}
+        \item ASM: Create Assembly Code that will later be assembled, linked, etc
+            C: The universal assembler. Go to a lower level language
+        \item Relocatable Binary Format: External references, data addresses
+            and function addresses are unbound. They will later be bound by the
+            loader. Position independent code uses relative offsets for addresses.
+            This promotes modular development and cross-language support (makes
+            them easier to implement, that is)
+        \item Absolute Binary Format: Executable format which is directly executable.
+            Mostly in embedded space. Easy to understand, because it's all RIGHT there.
+    \end{itemize}
+
+    Syntax - Structure of how it's said/expressed
+    \begin{itemize}
+        \item Sequence of symbols that are legal, independent of any notion of
+            what they mean: CFG/CFL \\
+            CFG promotes a rigid fundamental scan and tokenization process
+        \item Stataic semantics: Types and type checking. Whether identifiers
+            are declared (declared variables). Number of arguments for a procedure
+    \end{itemize}
+
+    Semantics - What is meant
+    \begin{itemize}
+        \item Can include syntactic rules that cannot be expressed by a CFG
+    \end{itemize}
+
+    Runtime Semantics
+    \begin{itemize}
+        \item Denotational Semantics
+            Meaning of a construct in terms of its constituants: x=y    L[x]m = L[y]m
+    \end{itemize}
+
+    Compiler process:
+    \begin{enumerate}
+        \item Source Code
+        \item $\rightarrow$ Scanner (pre-processor + tokenizer)
+        \item token stream
+        \item $\rightarrow$ Parser
+        \item AST (Abstract Syntax Tree) - Can be decorated for type-checking
+        \item $\rightarrow$ Some code options \
+            Target Code Right Now \
+            Optimization $\rightarrow$ Target code \
+            IR (Intermediate Representation) Code. Basically, go to an abstract idea of a machine.
+            Then IR $\rightarrow$ Optimizer(s) chain.
+            Finally to Target-Code Generator
+        \item Question: Some compiler writers use C as their target code. What some of the pros and cons of this?
+    \end{enumerate}
+
+    AC to DC:
+    \begin{itemize}
+        \item f b i a a = 5 b = a + 3.2 p b
+        \item f b ; i a ; a = 5 ; b = a + 3.2 ; p b
+        \item We have a CFG for this.
+        \item Syntactically Valid: Checking static semantics
+    \end{itemize}
+
+    Recursive-Descent parsing: 1 function per CFG Production. The function implements rules based on the CFG. It may call itself or other production functions
+
+    Implementing one of the Recursive-Descent Functions:
+    \begin{verbatim}
+    prodecure Expr()
+        if ts.peek() = plus or ts.peek() = minus
+        then
+            if ts.peek() = plus
+            then
+                call Match(ts, plus)
+            else
+                if ts.peek() = minus
+                then
+                    call Match(ts, minus)
+                end
+            end
+            call Val()
+            call Expr()
+        else
+            if ts.peek() = $
+            // ignore lambda production
+        end
+    end
+    \end{verbatim}
+
+    Abstract Syntax Trees and Parse trees
+    \begin{itemize}
+        \item AST has terminal nodes that contain a node-type, and terminal value. The node-types represent the functions that have been called
+        \item stmts wind up being multichild-trees, with a lot of 1-height trees. Like the parse tree, the AST MUST be interpreted left-to-right
+    \end{itemize}
+
+    Scanning and Regular Expressions
+    \begin{itemize}
+        \item Synonamous terms: Scanner == Lexer == Lexical Analysis
+        \item Scanning tries to match the absolute longest possible match
+        \item Regular Expressions are a good way to do lexing
+        \item Alphabet: $\Sigma$
+        \item We have Token Classes, which describe the class of tokens that are matched by a particular regular expression. An instance of a token class is a particular token that matches
+        \item Regex Golf (without the golfing)
+        \item Definitions:
+            \begin{itemize}
+                \item Eol = End of Line
+                \item L = All Letters
+                \item D = All Digits
+            \end{itemize}
+        \item Example: Phone Numbers: $D^3-D^3-D^4$
+        \item An integer: \
+            ($\lambda$|-|+)D+
+        \item A C identifier: \
+            (L|\_)(D|L|\_)*
+        \item Java or C++ // comments: \
+            //Not(Eol)*Eol
+        \item Floating Point number: \
+            ($\lambda$|-|+)(D*.D+|D+.D*)
+        \item Scientific Notation: \
+            ($\lambda$|-|+)($\lambda$|D*.)D+(e|E)($\lambda$|-|+)D+
+        \item A comment enclosed by '\#\#' on both sides: \
+            \#\#Not(Eol)*\#\#
+        \item An identifier that does not permit two \_'s together or a final \_:
+            Not(\_)*(\_|$\lambda$)
+        \item A C style multiline comment: \
+            /\*(Not((?<*))Not(/)|Not(*))*\*/
+        \item A simple division expression with balanced parens: \
+    \end{itemize}
+
+    Transitions in FAs can become Transducers by using an Action Table
+    \begin{itemize}
+        \item We have a table representing FA with transitions. With states vs input character
+        \item The action table has the exact same structure, excpet that instead of moving to a state, it calls a function at the transition
+    \end{itemize}
+
+    Flex / Lex
+    \begin{itemize}
+        \item Structure: \
+            declarations  - Data structures and types that are needed \
+            \%\% \
+            Optional Lex definitions. If this is empty, do not include an additional \%\% \
+            ex. \
+            Blank   " "
+            Digits  [0-9]+
+            \%\% \
+            regular expression rules - Regular expressions used for tokenizaton into the types \
+            ex.
+            Blank+                      { return SPACE; }
+            (Digits|Digits"."Digits)    { return NUM; }
+            \%\% \
+            subroutine definitions - functions used as outputs from regular expressions
+    \end{itemize}
+
+    RE $\to$ DFA $\to$ NFA
+    Make deterministic...
+    \begin{enumerate}
+        \item Record start state ( {1} ) $\to$ {1,2}
+        \item Find all the possible states that can be reached by all the characters, and create next set of states that can be reached
+    \end{enumerate}
+
+    Parse f(v+v)
+    \begin{enumerate}
+        \item E
+        \item Prefix ( E )
+        \item Prefix ( v Tail )
+        \item Prefix ( v + E )
+        \item Prefix ( v + v Tail )
+        \item Prefix ( v + v $\lambda$ )
+        \item f(v + v)
+    \end{enumerate}
+    
+    for p in prods
+        if lambda: true
+        else if only nonterminals
+            return 
+
+    Follow:
+    set of prod rules that produce the symbol ($\alpha$)
+    
+    Define LR Item
+    - Has a production with an index into it, indicating how much has been parsed. $\lambda$ productions Have an index only to 0, meaning that there's one parse step, and only one
+
+    Closure (LRItem)
+    I is a sec of items from the grammer. It will yield another set of items
+    K = dup(I)
+    if $A \to \alpha \bullet B \pi$ is an item in K, AND there exists $B \to \gamma$, then add $B \to \bullet \gamma$ to K
+    repeat for all in K
+    return K
+
+    Goto(I, X) where I is a set of items and X is a grammer symbol (non terminal, terminal, or terminator). It will return a new set of items
+    T = $\{$ t in I | X to the right of $\bullet \}$
+    T' = $\{ \textrm{t in T} |\bullet \textrm{moved to the right, after X} \}$
+    return Closure(T')
+
+    \begin{itemize}
+        \item Closure ( $\{ S \to \bullet E \$ \}$ ) \\
+            => $\{ S \to \bullet E \$, \\
+                 E \to \bullet plus E E, \\
+                 E \to \bullet num \}$ \\
+            = \$1
+
+        \item Goto (\$1, num) \\
+            => $\{ \textrm{Closure} ( E \to num \bullet ) \}$ \\
+            => $\{ E \to num \bullet \}$ \\
+            = \$2
+
+        \item Goto (\$1, plus) \\
+            => $\{ \textrm{Closure} ( E \to plus \bullet E E) \}$ \\
+            => $\{ E \to plus \bullet E E, \\
+                    E \to \bullet num, \\
+                    E \to \bullet plus E E \}$ \\
+            = \$3
+
+        \item Goto (\$3, E) \\
+            => $\{ \textrm{Closure} ( E \to plus E \bullet E ) \}$ \\
+            => $\{ E \to plus E \bullet E, \\
+                 E \to \bullet num, \\
+                 E \to \bullet plus E E \}$ \\
+            = \$4
+    \end{itemize}
+
+    Now, bring it back in. Calculate the LR(0). Also called the LR Canonical States
+    \begin{enumerate}
+        \item $C = \{ Closure( \{S -> \bullet RHS, ...\} )\}$ \#Set of all the possible start states. Closure that
+        \item   repeat: \\
+                    m = |C| \\
+                    for each I in C: \\
+                        for each X (Grammer symbol): \\
+                        J = Goto(I, X) \\
+                        if J not empty and not in C: \\
+                            add J to C \\
+                until |C| == m      or until it doesnt change sizes
+        \item Create an FA from this, and/or an LR(0) parse table
+    \end{enumerate}
+
+    The table: \\
+    \begin{tabular}{|c|c|c|c|c|c|}
+              & plus & num & \$ & S & E \\
+        $I_0$ & 2    & 3   &    &   & 1 \\
+        $I_1$ &      &     & acc&   &   \\
+        $I_2$ & 2    & 3   &    &   & 4 \\
+        $I_3$ & E -> Num                \\
+        $I_4$ &      &     &    &   &   \\
+        $I_5$ & E -> plus E E           \\
+        $I_a$ & S -> E\$                \\
+    \end{tabular}
+
+    Read through 6.4
+    p 224 \#3
+    p 225 \#6 a \& c
+    p 225 \#9
+
+    p224 \#3
+    Grammer:
+    \begin{enumerate}[(a)]
+        \item q\$ \\
+            \begin{tabular}{|l|l|l|}
+                0       & Init          & q\$ \\
+                0       & rd $\lambda \to$ B  & Bq\$  \\
+                0 B5    & sh B          & \$ \\
+                0 B5 q7 & sh q          & \$ \\
+                0 B5    & rd q $\to$ Q    & Q\$ \\
+                0 B5 Q6 & sh Q          & \$ \\
+                0       & rd BQ $\to$ A & A\$ \\
+                0 A1    & sh A          & \$ \\
+                0 A1    & rd $\lambda \to$ C & C\$ \\
+                0 A1 C14& sh C          & \$ \\
+                0       & rd AC $\to$ S & S\$ \\
+                0 S4    & sh S          & \$ \\
+                0 S4 \$8& sh \$         & \\
+                0       & rd S\$ $\to$ Start & Start \\
+                0 Start & sh Start      &
+            \end{tabular}
+        \item c\$ \\
+            \begin{tabular}{|l|l|l|}
+                0       & init          & c\$ \\
+                0       & rd $\lambda \to$ B & Bc\$ \\
+                0 B5    & sh B          & c\$ \\
+                0 B5    & rd $\lambda \to$ Q & Qc\$ \\
+                0 B5 Q6 & sh Q          & c\$ \\
+                0       & rd BQ $\to$ A & Ac\$ \\
+                0 A1    & sh A          & c\$ \\
+                0 A1 c11& sh c          & \$ \\
+                0 A1    & rd c $\to$ C  & C\$ \\
+                0 A1 C14& sh C          & \$ \\
+                0       & rd AC $\to$ S & S\$ \\
+                0 S4    & sh S          & \$ \\
+                0 S4 \$8& sh \$         & \\
+                0       & rd S\$ $\to$ Start & Start \\
+                0 Start & sh Start      &
+            \end{tabular}
+        \item adc\$ \\
+            \begin{tabular}{|l|l|l|}
+                0       & init          & adc\$ \\
+                0 a3    & sh a          & dc\$ \\
+                0 a3    & rd $\lambda \to$ B & Bdc\$ \\
+                0 a3 B9 & sh B          & dc\$ \\
+                0 a3 B9 & rd $\lambda \to$ C & Cdc\$ \\
+                0 a3 B9 C10& sh C       & dc\$ \\
+                0 a3 B9 C10 d12& sh d   & c\$ \\
+                0       & rd aBCd $\to$ A & Ac\$ \\
+                0 A1    & sh A          & c\$ \\
+                0 A1 c11& sh c          & \$ \\
+                0 A1    & rd c $\to$ C  & C\$ \\
+                0 A1 C14& sh C          & \$ \\
+                0       & rd AC $\to$ S & S\$ \\
+                0 S4    & sh S          & \$ \\
+                0 S4 \$8& sh \$         & \\
+                0       & rd S\$ $\to$ Start & Start \\
+                0 Start & sh Start      &
+            \end{tabular}
+    \end{enumerate}
+
+    p 225 \#9
+    The primary reason that this is un-ambiguous is the singular derivables in
+    the right-hand side of all the rules. With each derivation, there's only
+    one possible expansion choice \\
+
+    The grammer
+    \begin{itemize}
+        \item $S \to E \$$
+        \item $E \to E plus E$ \\
+            | num
+    \end{itemize}
+
+    Creating the table
+    \begin{itemize}
+        \item $I0 = \{ S \to \bullet E \$, E \to \bullet E plus E, E \to \bullet num \}$
+        \item $Goto(I0, E) = I1 \{ S \to E \bullet \$, E \to E \bullet plus E \}$
+        \item $Goto(I1, plus) = I2 \{ E \to E plus \bullet E, E \to \bullet num \}$
+        \item $Goto(I2, E) = I3 \{ E \to E plus E \bullet \}$
+        \item $Goto()...$
+
+    \end{itemize}
+
+    Grammer which is C-like, but minimal \\
+
+    page 139 q7 \\
+    Grammer: \\
+    \begin{enumerate}
+        \item Start $\to$ E \$
+        \item E $\to$ T plus E
+        \item   | T
+        \item T $\to$ T times F
+        \item   | F
+        \item F $\to ($ E $)$
+        \item   | num
+    \end{enumerate}
+
+    \begin{enumerate}[(a)]
+        \item leftmost derivation of target: num plus num times num plus num \$ \\
+            Start $\to$ \\
+            E \$ $\to$ \\
+            T plus E \$ $\to$ \\
+            F plus E \$ $\to$ \\
+            num plus E \$ $\to$ \\
+            num plus T plus E \$ $\to$ \\
+            num plus T times F plus E \$ $\to$ \\
+            num plus F times F plus E \$ $\to$ \\
+            num plus num times F plus E \$ $\to$ \\
+            num plus num times num plus E \$ $\to$ \\
+            num plus num times num plus T \$ $\to$ \\
+            num plus num times num plus F \$ $\to$ \\
+            num plus num times num plus num \$
+        \item Rightmost derivation of target: num times num plus num times num \$ \\
+            Start $\to$ \\
+            E \$ $\to$ \\
+            T plus E \$ $\to$ \\
+            T plus T \$ $\to$ \\
+            T plus T times F \$ $\to$ \\
+            T plus T times num \$ $\to$ \\
+            T plus F times num \$ $\to$ \\
+            T plus num times num \$ $\to$ \\
+            T times F plus num times num \$ $\to$ \\
+            T times num plus num times num \$ $\to$ \\
+            F times num plus num times num \$ $\to$ \\
+            num times num plus num times num \$ $\to$
+        \item Pluses always come before times. They are the most important. Then leftmost causes Left associativity, and Right casuses Right assosiativity
+    \end{enumerate}
+
+    page 225 q6 parts b,d
+    \begin{enumerate}[(a)]
+        \item Skip
+        \item
+            \begin{enumerate}
+                \item S $\to$ StmtList \$
+                \item StmtList $\to$ Stmt semi StmtList
+                \item   | Stmt
+                \item Stmt $\to$ s
+            \end{enumerate}
+            This grammer is NOT $LR(0)$ because the StmtList has two rules that
+            start with the same symbol. When that symbol is on the left-side, we
+            don't know if we should finish the rule or if we should read the next character
+        \item Skip
+        \item
+            \begin{enumerate}
+                \item S $\to$ StmtList \$
+                \item StmtList $\to$ s StTail
+                \item StTail $\to$ semi StTail
+                \item   | $\lambda$
+            \end{enumerate}
+            Yes, this grammer is LR(0). The use of tail makes it very clear that
+            the first 's' should be read and rule 2 used, THEN move to the next
+            character/input, from which, the rule to use can be determined based
+            on only the next input.
+    \end{enumerate}
+
+    Start $\to$ S\$ $\to$ AB $\to$ aB $\to$ ab\$
+    Start $\to$ S\$ $\to$ AB $\to$ aB $\to$ a\$
+    Start $\to$ S\$ $\to$ ac\$
+    Start $\to$ S\$ $\to$ xAc\$ $\to$ xac\$
+
+    \subsection{LGA 4}
+    Page 141 q6 \\
+    Start with the set A, consisting of all symbols produced by the start symbol. \\
+    For all non-terminals in the set, \\
+        Add all the symbols produced by the non-terminal to the set, \\
+        then remove the non-terminal from the set. \\
+    repeat until no changes are made (which includes running out of non-terminals) \\
+    The set of unreachable symbols $U = \Sigma - A$ \\
+
+    Overly simple CFG \\
+    PRGM -> S \\
+    S -> if ( b ) S MaybeElse
+    S -> s
+    MaybeElse -> lambda
+              | else S
+
+    Do 2 and 3
+
+\end{document}
